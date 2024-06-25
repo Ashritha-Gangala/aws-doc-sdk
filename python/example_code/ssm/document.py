@@ -42,6 +42,9 @@ class DocumentWrapper:
                 Name=name, Content=content, DocumentType="Command"
             )
             self.name = name
+        except self.ssm_client.exceptions.DocumentAlreadyExists:
+            logger.warning("Document %s already exists. ", name)
+            self.name = name
         except ClientError as err:
             logger.error(
                 "Couldn't create %s. Here's why: %s: %s",
@@ -64,6 +67,14 @@ class DocumentWrapper:
         try:
             self.ssm_client.delete_document(Name=self.name)
             self.name = None
+        except self.ssm_client.exceptions.InvalidDocument as err:
+            logger.error(
+                "Document %s is not valid.  %s: %s",
+                self.name,
+                err.response["Error"]["Code"],
+                err.response["Error"]["Message"],
+            )
+            raise
         except ClientError as err:
             logger.error(
                 "Couldn't delete %s. Here's why: %s: %s",
@@ -88,6 +99,14 @@ class DocumentWrapper:
                 InstanceIds=instance_ids, DocumentName=self.name, TimeoutSeconds=3600
             )
             return response["Command"]["CommandId"]
+        except self.ssm_client.exceptions.InvalidDocument as err:
+            logger.error(
+                "Document %s is not valid.  %s: %s",
+                self.name,
+                err.response["Error"]["Code"],
+                err.response["Error"]["Message"],
+            )
+            raise
         except ClientError as err:
             logger.error(
                 "Couldn't send command to %s. Here's why: %s: %s",
@@ -176,6 +195,14 @@ class DocumentWrapper:
                 print(
                     f"   The time of command invocation is {command['RequestedDateTime'].strftime(date_format)}"
                 )
+        except self.ssm_client.exceptions.InvalidInstanceId as err:
+            logger.error(
+                "Instance ID %s is not valid.  %s: %s",
+                instance_id,
+                err.response["Error"]["Code"],
+                err.response["Error"]["Message"],
+            )
+            raise
         except ClientError as err:
             logger.error(
                 "Couldn't list commands for %s. Here's why: %s: %s",
