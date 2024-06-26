@@ -43,7 +43,7 @@ class DocumentWrapper:
             )
             self.name = name
         except self.ssm_client.exceptions.DocumentAlreadyExists:
-            logger.warning("Document %s already exists. ", name)
+            print(f"Document {name} already exists.")
             self.name = name
         except ClientError as err:
             logger.error(
@@ -128,6 +128,14 @@ class DocumentWrapper:
         try:
             response = self.ssm_client.describe_document(Name=self.name)
             return response["Document"]["Status"]
+        except self.ssm_client.exceptions.InvalidDocument as err:
+            logger.error(
+                "Document %s is not valid.  %s: %s",
+                self.name,
+                err.response["Error"]["Code"],
+                err.response["Error"]["Message"],
+            )
+            raise
         except ClientError as err:
             logger.error(
                 "Couldn't get %s. Here's why: %s: %s",

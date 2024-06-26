@@ -113,6 +113,14 @@ class MaintenanceWindowWrapper:
             )
             self.name = name
             logger.info("Updated maintenance window %s.", self.window_id)
+        except self.ssm_client.exceptions.DoesNotExistException as err:
+            logger.error(
+                "Maintenance window %s does not exist.%s: %s",
+                self.window_id,
+                err.response["Error"]["Code"],
+                err.response["Error"]["Message"],
+            )
+            raise
         except ClientError as err:
             logger.error(
                 "Couldn't update maintenance window %s. Here's why: %s: %s",
